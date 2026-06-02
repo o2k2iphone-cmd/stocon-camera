@@ -68,7 +68,7 @@
         const toSetupModeBtn = document.getElementById('toSetupModeBtn');
         const downloadCsvBtn = document.getElementById('downloadCsvBtn');
 
-        // ★メモを一時保存するための「箱（配列）」を用意
+        // メモを一時保存するための配列
         let memoList = [];
 
         navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
@@ -98,14 +98,15 @@
             const store = document.getElementById('storeName').value || "店舗未入力";
             const memoText = document.getElementById('memo').value;
 
-            // ★シャッターを押した瞬間に、日時・店名・メモを箱に記録する
+            // 日時・店名・メモを記録
             const now = new Date();
             const timeString = now.toLocaleDateString() + " " + now.toLocaleTimeString();
             memoList.push({ time: timeString, store: store, memo: memoText });
 
-            // 次の撮影のためにメモ欄を空にする
+            // 次の撮影のためにメモ欄をリセット
             document.getElementById('memo').value = "";
             
+            // 透かし文字の処理
             if(document.getElementById('watermark').checked) {
                 context.font = "20px sans-serif";
                 context.fillStyle = "rgba(255, 255, 255, 0.4)"; 
@@ -113,7 +114,7 @@
                 context.fillText(`📍 ${store}`, canvas.width - 20, canvas.height - 20);
             }
 
-            // iPhoneの共有メニューを呼び出す
+            // iPhoneの共有メニューを呼び出して保存
             canvas.toBlob(function(blob) {
                 const file = new File([blob], `stcon_${new Date().getTime()}.jpg`, { type: 'image/jpeg' });
                 if (navigator.canShare && navigator.canShare({ files: [file] })) {
@@ -127,33 +128,30 @@
             }, 'image/jpeg');
         });
 
-        // ★メモ台帳ダウンロードボタンを押したときの処理
+        // CSVダウンロードボタンの処理
         downloadCsvBtn.addEventListener('click', () => {
             if (memoList.length === 0) {
                 alert("まだメモが記録されていません。");
                 return;
             }
             
-            // Excelで文字化けしないおまじない（BOM）とヘッダー
+            // Excel用文字化け防止（BOM）とヘッダー
             let csvContent = "\uFEFF日時,視察店舗,音声メモ\n";
             
             memoList.forEach(row => {
-                // カンマが含まれていてもExcelで崩れないようにする処理
                 let safeStore = `"${row.store}"`;
                 let safeMemo = `"${row.memo}"`;
                 csvContent += `${row.time},${safeStore},${safeMemo}\n`;
             });
             
-            // CSVファイルとしてダウンロード（iPhoneのファイルアプリへ）
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
             link.href = URL.createObjectURL(blob);
             link.download = `stcon_memo_${new Date().getTime()}.csv`;
             link.click();
             
-            // ダウンロード後、リストをリセットするか確認
             if(confirm("メモをダウンロードしました。記録をリセットして次の視察を始めますか？")) {
-                memoList = []; // 箱を空にする
+                memoList = [];
             }
         });
     </script>
