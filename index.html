@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="apple-touch-icon" href="icon.png">
-    <title>ストコンカメラ（無音・現場用）v4</title>
+    <title>ストコンカメラ（無音・現場用）v5</title>
     <style>
         body { font-family: sans-serif; background-color: #f0f8f0; text-align: center; margin: 0; padding: 10px; }
         h2 { color: #2e8b57; margin-bottom: 10px; font-size: 18px; }
@@ -22,11 +22,13 @@
             margin: 0 auto; display: block;
         }
         button.circle-snap:active { background-color: #ccc; }
-        button.back-btn { margin-top: 20px; background-color: transparent; border: 1px solid #777; color: #777; padding: 8px 15px; font-size: 14px; cursor: pointer; }
+        button.back-btn { margin-top: 20px; background-color: transparent; border: 1px solid #777; color: #777; padding: 8px 15px; font-size: 14px; cursor: pointer; display: block; width: 100%; }
+        /* CSVダウンロードボタンのスタイル */
+        button.csv-btn { margin-top: 15px; background-color: #fff; border: 2px solid #2e8b57; color: #2e8b57; padding: 12px; font-size: 16px; font-weight: bold; border-radius: 5px; cursor: pointer; width: 100%; }
     </style>
 </head>
 <body>
-    <h2 id="appTitle">🌿 ストコンカメラ v4</h2>
+    <h2 id="appTitle">🌿 ストコンカメラ v5</h2>
     
     <video id="video" autoplay playsinline></video>
     <canvas id="canvas"></canvas>
@@ -34,14 +36,13 @@
     <div id="setupArea">
         <label>📍 競合店名</label>
         <input type="text" id="storeName" placeholder="例: ライバルA店" list="storeList">
-        
         <datalist id="storeList">
             <option value="〇〇ホーム 福島店"></option>
             <option value="〇〇マート 郡山店"></option>
             <option value="〇〇センター 会津店"></option>
         </datalist>
 
-        <label>🎤 音声メモ（タップしてキーボードのマイクを押す）</label>
+        <label>🎤 音声メモ（タップしてマイクを押す）</label>
         <input type="text" id="memo" placeholder="メモを入力...">
 
         <label>
@@ -53,6 +54,7 @@
 
     <div id="shootArea">
         <button class="circle-snap" id="snapBtn">〇</button>
+        <button class="csv-btn" id="downloadCsvBtn">📋 メモ台帳を保存 (Excel用)</button>
         <button class="back-btn" id="toSetupModeBtn">戻る（店名・メモの変更）</button>
     </div>
 
@@ -64,6 +66,10 @@
         const shootArea = document.getElementById('shootArea');
         const toShootModeBtn = document.getElementById('toShootModeBtn');
         const toSetupModeBtn = document.getElementById('toSetupModeBtn');
+        const downloadCsvBtn = document.getElementById('downloadCsvBtn');
+
+        // ★メモを一時保存するための「箱（配列）」を用意
+        let memoList = [];
 
         navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
             .then(stream => { video.srcObject = stream; })
@@ -81,6 +87,7 @@
             document.getElementById('appTitle').style.display = 'block';
         });
 
+        // シャッターを押したときの処理
         snapBtn.addEventListener('click', () => {
             const context = canvas.getContext('2d');
             canvas.width = video.videoWidth;
@@ -88,30 +95,66 @@
             
             context.drawImage(video, 0, 0, canvas.width, canvas.height);
             
+            const store = document.getElementById('storeName').value || "店舗未入力";
+            const memoText = document.getElementById('memo').value;
+
+            // ★シャッターを押した瞬間に、日時・店名・メモを箱に記録する
+            const now = new Date();
+            const timeString = now.toLocaleDateString() + " " + now.toLocaleTimeString();
+            memoList.push({ time: timeString, store: store, memo: memoText });
+
+            // 次の撮影のためにメモ欄を空にする
+            document.getElementById('memo').value = "";
+            
             if(document.getElementById('watermark').checked) {
-                const store = document.getElementById('storeName').value || "店舗未入力";
                 context.font = "20px sans-serif";
                 context.fillStyle = "rgba(255, 255, 255, 0.4)"; 
                 context.textAlign = 'right';
                 context.fillText(`📍 ${store}`, canvas.width - 20, canvas.height - 20);
             }
 
-            // ★修正ポイント：iPhoneの共有メニューを呼び出す（Web Share API）
+            // iPhoneの共有メニューを呼び出す
             canvas.toBlob(function(blob) {
                 const file = new File([blob], `stcon_${new Date().getTime()}.jpg`, { type: 'image/jpeg' });
                 if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                    navigator.share({
-                        files: [file],
-                        title: 'ストコン写真'
-                    }).catch(console.error);
+                    navigator.share({ files: [file] }).catch(console.error);
                 } else {
-                    // 古い機種等の場合の予備処理（ダウンロードフォルダ行き）
                     const link = document.createElement('a');
                     link.download = file.name;
                     link.href = URL.createObjectURL(blob);
                     link.click();
                 }
             }, 'image/jpeg');
+        });
+
+        // ★メモ台帳ダウンロードボタンを押したときの処理
+        downloadCsvBtn.addEventListener('click', () => {
+            if (memoList.length === 0) {
+                alert("まだメモが記録されていません。");
+                return;
+            }
+            
+            // Excelで文字化けしないおまじない（BOM）とヘッダー
+            let csvContent = "\uFEFF日時,視察店舗,音声メモ\n";
+            
+            memoList.forEach(row => {
+                // カンマが含まれていてもExcelで崩れないようにする処理
+                let safeStore = `"${row.store}"`;
+                let safeMemo = `"${row.memo}"`;
+                csvContent += `${row.time},${safeStore},${safeMemo}\n`;
+            });
+            
+            // CSVファイルとしてダウンロード（iPhoneのファイルアプリへ）
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = `stcon_memo_${new Date().getTime()}.csv`;
+            link.click();
+            
+            // ダウンロード後、リストをリセットするか確認
+            if(confirm("メモをダウンロードしました。記録をリセットして次の視察を始めますか？")) {
+                memoList = []; // 箱を空にする
+            }
         });
     </script>
 </body>
