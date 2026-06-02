@@ -3,24 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ストコンカメラ（無音・現場用）v3</title>
+    <link rel="apple-touch-icon" href="icon.png">
+    <title>ストコンカメラ（無音・現場用）v4</title>
     <style>
         body { font-family: sans-serif; background-color: #f0f8f0; text-align: center; margin: 0; padding: 10px; }
         h2 { color: #2e8b57; margin-bottom: 10px; font-size: 18px; }
-        
-        /* カメラ映像のサイズ調整 */
         video { width: 100%; max-width: 600px; background-color: #000; border-radius: 8px; }
         canvas { display: none; }
-        
-        /* 設定エリアのスタイル */
         #setupArea { display: flex; flex-direction: column; gap: 10px; max-width: 400px; margin: 15px auto; text-align: left; }
         input, select, button { padding: 12px; font-size: 16px; border-radius: 5px; border: 1px solid #ccc; }
         button.start-shoot { background-color: #2e8b57; color: white; border: none; font-weight: bold; cursor: pointer; }
-        
-        /* 撮影モード専用エリア（最初は隠しておく） */
         #shootArea { display: none; margin-top: 20px; }
-        
-        /* 丸いシャッターボタン */
         button.circle-snap { 
             width: 80px; height: 80px; border-radius: 50%; 
             background-color: rgba(255, 255, 255, 0.8); 
@@ -29,13 +22,11 @@
             margin: 0 auto; display: block;
         }
         button.circle-snap:active { background-color: #ccc; }
-        
-        /* 設定に戻るボタン */
         button.back-btn { margin-top: 20px; background-color: transparent; border: 1px solid #777; color: #777; padding: 8px 15px; font-size: 14px; cursor: pointer; }
     </style>
 </head>
 <body>
-    <h2 id="appTitle">🌿 ストコンカメラ v3</h2>
+    <h2 id="appTitle">🌿 ストコンカメラ v4</h2>
     
     <video id="video" autoplay playsinline></video>
     <canvas id="canvas"></canvas>
@@ -43,14 +34,15 @@
     <div id="setupArea">
         <label>📍 競合店名</label>
         <input type="text" id="storeName" placeholder="例: ライバルA店" list="storeList">
+        
         <datalist id="storeList">
-            <option value="コメリ〇〇店"></option>
-            <option value="コーナン〇〇店"></option>
-            <option value="カインズ〇〇店"></option>
+            <option value="〇〇ホーム 福島店"></option>
+            <option value="〇〇マート 郡山店"></option>
+            <option value="〇〇センター 会津店"></option>
         </datalist>
 
-        <label>🎤 音声メモ（Bluetoothマイク）</label>
-        <input type="text" id="memo" placeholder="マイク機能で喋ってください">
+        <label>🎤 音声メモ（タップしてキーボードのマイクを押す）</label>
+        <input type="text" id="memo" placeholder="メモを入力...">
 
         <label>
             <input type="checkbox" id="watermark" checked> 透かし文字（ON/OFF）
@@ -77,21 +69,18 @@
             .then(stream => { video.srcObject = stream; })
             .catch(err => { alert("カメラの起動が許可されていません。"); });
 
-        // 「撮影モードへ」ボタンを押したときの切り替え
         toShootModeBtn.addEventListener('click', () => {
-            setupArea.style.display = 'none';   // 入力欄を隠す
-            shootArea.style.display = 'block';  // シャッターボタンを表示
-            document.getElementById('appTitle').style.display = 'none'; // タイトルも隠して画面を広く
+            setupArea.style.display = 'none';
+            shootArea.style.display = 'block';
+            document.getElementById('appTitle').style.display = 'none';
         });
 
-        // 「戻る」ボタンを押したときの切り替え
         toSetupModeBtn.addEventListener('click', () => {
-            shootArea.style.display = 'none';   // シャッターボタンを隠す
-            setupArea.style.display = 'flex';   // 入力欄を再表示
+            shootArea.style.display = 'none';
+            setupArea.style.display = 'flex';
             document.getElementById('appTitle').style.display = 'block';
         });
 
-        // シャッター（〇）ボタンを押したときの処理
         snapBtn.addEventListener('click', () => {
             const context = canvas.getContext('2d');
             canvas.width = video.videoWidth;
@@ -102,17 +91,27 @@
             if(document.getElementById('watermark').checked) {
                 const store = document.getElementById('storeName').value || "店舗未入力";
                 context.font = "20px sans-serif";
-                
-                // --- ★修正ポイント：文字をさらに薄く（0.7 → 0.4へ） ---
                 context.fillStyle = "rgba(255, 255, 255, 0.4)"; 
                 context.textAlign = 'right';
                 context.fillText(`📍 ${store}`, canvas.width - 20, canvas.height - 20);
             }
 
-            const link = document.createElement('a');
-            link.download = `stcon_${new Date().getTime()}.jpg`;
-            link.href = canvas.toDataURL('image/jpeg');
-            link.click();
+            // ★修正ポイント：iPhoneの共有メニューを呼び出す（Web Share API）
+            canvas.toBlob(function(blob) {
+                const file = new File([blob], `stcon_${new Date().getTime()}.jpg`, { type: 'image/jpeg' });
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    navigator.share({
+                        files: [file],
+                        title: 'ストコン写真'
+                    }).catch(console.error);
+                } else {
+                    // 古い機種等の場合の予備処理（ダウンロードフォルダ行き）
+                    const link = document.createElement('a');
+                    link.download = file.name;
+                    link.href = URL.createObjectURL(blob);
+                    link.click();
+                }
+            }, 'image/jpeg');
         });
     </script>
 </body>
