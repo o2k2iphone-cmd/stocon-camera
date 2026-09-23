@@ -1,578 +1,691 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="apple-touch-icon" href="icon.png">
-  <title>ストコンカメラ v6</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#101820">
+  <link rel="icon" href="./icon.png">
+  <link rel="apple-touch-icon" href="./icon.png">
+  <title>ストコンカメラ</title>
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    :root {
-      --green: #16a34a;
-      --green-light: #dcfce7;
-      --green-dark: #14532d;
-      --text-primary: #111827;
-      --text-secondary: #6b7280;
-      --border: #e5e7eb;
-      --bg: #f9fafb;
-      --white: #ffffff;
-      --radius-sm: 8px;
-      --radius-md: 12px;
-      --radius-lg: 16px;
-    }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Noto Sans JP', sans-serif;
-      background: var(--bg);
-      color: var(--text-primary);
-      min-height: 100dvh;
-    }
-
-    /* ── Screens ── */
-    .screen { display: none; flex-direction: column; min-height: 100dvh; }
-    .screen.active { display: flex; }
-
-    /* ── Setup Screen ── */
-    #setupScreen {
-      padding: 0 0 2rem;
-    }
-
-    .video-hero {
-      position: relative;
-      width: 100%;
-      aspect-ratio: 4/3;
-      background: #0a0a0a;
-      overflow: hidden;
-    }
-    .video-hero video {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      transform-origin: center;
-      display: block;
-    }
-    .live-badge {
-      position: absolute;
-      top: 12px;
-      left: 12px;
-      background: rgba(0,0,0,0.6);
-      backdrop-filter: blur(4px);
-      -webkit-backdrop-filter: blur(4px);
-      border-radius: 20px;
-      padding: 5px 10px;
-      font-size: 11px;
-      font-weight: 600;
-      color: #fff;
-      letter-spacing: 1px;
-      display: flex;
-      align-items: center;
-      gap: 5px;
-    }
-    .live-dot {
-      width: 6px; height: 6px;
-      border-radius: 50%;
-      background: #ef4444;
-      animation: pulse 1.4s infinite;
-    }
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.3; }
-    }
-
-    .setup-body {
-      padding: 1.25rem 1rem;
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-      flex: 1;
-    }
-
-    .app-title {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .app-icon {
-      width: 38px; height: 38px;
-      border-radius: var(--radius-sm);
-      background: var(--green-light);
-      display: flex; align-items: center; justify-content: center;
-    }
-    .app-icon svg { width: 20px; height: 20px; stroke: var(--green); }
-    .app-name { font-size: 15px; font-weight: 600; color: var(--text-primary); }
-    .app-version { font-size: 12px; color: var(--text-secondary); margin-top: 1px; }
-
-    .form-card {
-      background: var(--white);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-md);
-      overflow: hidden;
-    }
-    .form-row {
-      padding: 13px 16px;
-      border-bottom: 1px solid var(--border);
-    }
-    .form-row:last-child { border-bottom: none; }
-    .form-label {
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--text-secondary);
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
-      margin-bottom: 6px;
-      display: flex; align-items: center; gap: 5px;
-    }
-    .form-label svg { width: 13px; height: 13px; stroke: var(--text-secondary); }
-    .form-row input[type="text"] {
-      width: 100%;
-      border: none;
-      outline: none;
-      font-size: 15px;
-      color: var(--text-primary);
-      background: transparent;
-      padding: 0;
-      font-family: inherit;
-    }
-    .form-row input[type="text"]::placeholder { color: #c0c4cc; }
-
-    .toggle-row {
-      display: flex; align-items: center; justify-content: space-between;
-    }
-    .toggle-label {
-      font-size: 14px;
-      color: var(--text-primary);
-      display: flex; align-items: center; gap: 7px;
-    }
-    .toggle-label svg { width: 16px; height: 16px; stroke: var(--text-secondary); }
-
-    .toggle { position: relative; width: 44px; height: 24px; flex-shrink: 0; }
-    .toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
-    .toggle-track {
-      position: absolute; inset: 0;
-      background: #d1d5db;
-      border-radius: 12px;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-    .toggle-track::after {
-      content: '';
-      position: absolute;
-      left: 3px; top: 3px;
-      width: 18px; height: 18px;
-      background: #fff;
-      border-radius: 50%;
-      transition: transform 0.2s;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-    }
-    .toggle input:checked + .toggle-track { background: var(--green); }
-    .toggle input:checked + .toggle-track::after { transform: translateX(20px); }
-
-    .btn-start {
-      width: 100%;
-      padding: 15px;
-      background: var(--green);
-      color: #fff;
-      border: none;
-      border-radius: var(--radius-md);
-      font-size: 16px;
-      font-weight: 600;
-      font-family: inherit;
-      cursor: pointer;
-      display: flex; align-items: center; justify-content: center; gap: 8px;
-      transition: background 0.15s;
-    }
-    .btn-start:active { background: #15803d; }
-    .btn-start svg { width: 18px; height: 18px; stroke: #fff; }
-
-    /* ── Shoot Screen ── */
-    #shootScreen {
-      background: #0a0a0a;
-    }
-
-    .shoot-video-wrap {
-      position: relative;
-      width: 100%;
-      aspect-ratio: 4/3;
-      overflow: hidden;
-      flex-shrink: 0;
-    }
-    .shoot-video-wrap video {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      transform-origin: center;
-      display: block;
-    }
-    .shoot-store-badge {
-      position: absolute;
-      bottom: 12px; left: 12px;
-      background: rgba(0,0,0,0.6);
-      backdrop-filter: blur(4px);
-      -webkit-backdrop-filter: blur(4px);
-      border-radius: 20px;
-      padding: 5px 11px;
-      font-size: 12px;
-      font-weight: 500;
-      color: #fff;
-      max-width: 70%;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .shoot-memo-badge {
-      position: absolute;
-      top: 12px; right: 12px;
-      background: rgba(22,163,74,0.85);
-      border-radius: 20px;
-      padding: 4px 10px;
-      font-size: 11px;
-      font-weight: 600;
-      color: #fff;
-    }
-
-    .shoot-controls {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      padding: 1rem;
-      gap: 0.75rem;
-    }
-
-    .zoom-bar {
-      background: #1a1a1a;
-      border: 1px solid #2a2a2a;
-      border-radius: var(--radius-sm);
-      padding: 10px 14px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .zoom-icon { flex-shrink: 0; }
-    .zoom-icon svg { width: 16px; height: 16px; stroke: #6b7280; display: block; }
-    .zoom-bar input[type="range"] {
-      flex: 1;
-      -webkit-appearance: none;
-      appearance: none;
-      height: 3px;
-      background: #3a3a3a;
-      border-radius: 2px;
-      outline: none;
-      cursor: pointer;
-    }
-    .zoom-bar input[type="range"]::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      width: 18px; height: 18px;
-      border-radius: 50%;
-      background: var(--green);
-      cursor: pointer;
-    }
-    .zoom-val {
-      font-size: 12px;
-      font-weight: 600;
-      color: #9ca3af;
-      min-width: 34px;
-      text-align: right;
-    }
-
-    .shutter-area {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex: 1;
-      padding: 0.5rem 0;
-    }
-    .shutter-btn {
-      width: 76px; height: 76px;
-      border-radius: 50%;
-      border: 3px solid #fff;
-      background: transparent;
-      cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      position: relative;
-      transition: transform 0.1s;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .shutter-btn:active { transform: scale(0.91); }
-    .shutter-inner {
-      width: 58px; height: 58px;
-      border-radius: 50%;
-      background: #fff;
-      transition: background 0.1s;
-    }
-    .shutter-btn:active .shutter-inner { background: #d1d5db; }
-
-    .shoot-actions {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-    .btn-csv {
-      width: 100%;
-      padding: 13px;
-      background: transparent;
-      color: #e5e7eb;
-      border: 1px solid #2a2a2a;
-      border-radius: var(--radius-md);
-      font-size: 14px;
-      font-weight: 500;
-      font-family: inherit;
-      cursor: pointer;
-      display: flex; align-items: center; justify-content: center; gap: 7px;
-      transition: background 0.15s;
-    }
-    .btn-csv:active { background: #1a1a1a; }
-    .btn-csv svg { width: 16px; height: 16px; stroke: #9ca3af; }
-    .btn-back {
-      width: 100%;
-      padding: 10px;
-      background: transparent;
-      color: #6b7280;
-      border: none;
-      font-size: 13px;
-      font-family: inherit;
-      cursor: pointer;
-      display: flex; align-items: center; justify-content: center; gap: 5px;
-    }
-    .btn-back svg { width: 14px; height: 14px; stroke: #6b7280; }
-
-    .count-row {
-      text-align: center;
-      font-size: 12px;
-      color: #4b5563;
-    }
-    .count-row strong { color: #9ca3af; }
+    :root { color-scheme: light; font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #f3f5f7; color: #14202b; }
+    button, input { font: inherit; }
+    button { cursor: pointer; }
+    button:disabled { cursor: wait; opacity: .5; }
+    [hidden] { display: none !important; }
+    .app { max-width: 720px; min-height: 100dvh; margin: auto; background: #fff; display: flex; flex-direction: column; }
+    header { padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+    header h1 { margin: 0; font-size: 18px; letter-spacing: .02em; }
+    header small { color: #64748b; font-size: 11px; }
+    .status { margin: 0 12px 10px; padding: 10px 12px; border-radius: 9px; background: #eaf4ff; color: #17446a; font-size: 13px; line-height: 1.5; }
+    .status.error { background: #fff0ed; color: #9b2c1e; }
+    .camera-stage { position: relative; width: 100%; aspect-ratio: 4 / 3; overflow: hidden; background: #0b0f13; }
+    .camera-stage.portrait { aspect-ratio: 3 / 4; }
+    video { position: absolute; inset: 0; width: 100%; height: 100%; display: block; object-fit: cover; transform-origin: center; }
+    .camera-help { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; padding: 20px; color: #fff; background: #15212bdd; line-height: 1.6; }
+    .camera-help button { margin: 12px auto 0; }
+    .stage-label { position: absolute; bottom: 10px; left: 10px; padding: 5px 8px; border-radius: 5px; color: #fff; background: #0009; font-size: 11px; }
+    .controls { padding: 14px 16px calc(20px + env(safe-area-inset-bottom)); display: grid; gap: 15px; }
+    .tool-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .segmented { display: flex; gap: 5px; padding: 4px; background: #edf1f4; border-radius: 11px; }
+    .segmented button, .tool-button { min-width: 52px; min-height: 43px; border: 0; border-radius: 8px; background: transparent; color: #253746; font-weight: 700; }
+    .segmented button.active { color: #fff; background: #176b57; }
+    .tool-button { min-width: 76px; padding: 0 10px; background: #edf1f4; font-size: 13px; }
+    .tool-button.active { color: #fff; background: #176b57; }
+    .shutter-row { display: flex; justify-content: center; padding: 1px 0; }
+    .shutter { width: 82px; height: 82px; border-radius: 50%; border: 5px solid #176b57; background: #fff; padding: 6px; box-shadow: 0 0 0 3px #d5e5df; }
+    .shutter span { display: block; width: 100%; height: 100%; border-radius: 50%; background: #176b57; }
+    .shutter:active span { transform: scale(.9); }
+    .field-label { display: block; font-size: 12px; font-weight: 700; margin-bottom: 5px; color: #415366; }
+    .name-input { width: 100%; min-height: 46px; padding: 9px 12px; border: 1px solid #b9c4cd; border-radius: 8px; background: #fff; font-size: 16px; }
+    .setting-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .setting-row p { flex: 1; min-width: 0; margin: 0; font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
+    .setting-row button { flex: none; }
+    .muted { color: #64748b; font-size: 12px; line-height: 1.5; }
+    .solid, .outline { min-height: 44px; border-radius: 9px; padding: 9px 14px; font-weight: 700; }
+    .solid { border: 1px solid #176b57; background: #176b57; color: #fff; }
+    .outline { border: 1px solid #b9c4cd; background: #fff; color: #203548; }
+    .review { padding: 0 16px 24px; display: grid; gap: 14px; }
+    .review img { display: block; width: 100%; max-height: 58dvh; object-fit: contain; background: #0b0f13; border-radius: 8px; }
+    .review h2 { margin: 0; font-size: 17px; }
+    .review p { margin: 0; overflow-wrap: anywhere; }
+    .review-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .review-actions .solid { grid-column: 1 / -1; }
+    .panel { position: fixed; z-index: 10; inset: 0; background: #17212bb3; display: flex; align-items: flex-end; justify-content: center; }
+    .panel-card { width: min(100%, 720px); max-height: 94dvh; overflow: auto; background: #fff; padding: 16px 16px calc(20px + env(safe-area-inset-bottom)); border-radius: 18px 18px 0 0; display: grid; gap: 14px; }
+    .panel-head { display: flex; align-items: center; justify-content: space-between; }
+    .panel-head h2 { font-size: 18px; margin: 0; }
+    fieldset { margin: 0; padding: 12px; border: 1px solid #d0d8de; border-radius: 9px; }
+    legend { font-weight: 700; font-size: 14px; }
+    .radio-list { display: flex; flex-wrap: wrap; gap: 14px; }
+    .radio-list label { display: flex; align-items: center; gap: 5px; min-height: 32px; }
+    .panel-section { display: grid; gap: 9px; padding-top: 4px; border-top: 1px solid #e1e6ea; }
+    .panel-section h3 { margin: 8px 0 0; font-size: 15px; }
+    .button-pair { display: flex; gap: 8px; flex-wrap: wrap; }
+    .redirect { padding: 8px; background: #f2f5f7; border-radius: 6px; overflow-wrap: anywhere; font-size: 12px; }
+    .folder-list { display: grid; gap: 5px; }
+    .folder-list button { min-height: 43px; padding: 8px 12px; border: 1px solid #d0d8de; border-radius: 8px; background: #fff; text-align: left; }
+    .folder-path { font-weight: 700; overflow-wrap: anywhere; }
+    @media (min-width: 721px) { .app { box-shadow: 0 0 24px #00000014; } .panel { align-items: center; } .panel-card { border-radius: 16px; max-height: 90dvh; } }
   </style>
 </head>
 <body>
+  <main class="app">
+    <header><div><h1>ストコンカメラ</h1><small>無音・JPEG撮影</small></div><span id="cameraInfo" class="muted"></span></header>
+    <p id="status" class="status" role="status" hidden></p>
 
-  <!-- Setup Screen -->
-  <div id="setupScreen" class="screen active">
-    <div class="video-hero">
-      <video id="video" autoplay playsinline></video>
-      <div class="live-badge"><div class="live-dot"></div>LIVE</div>
-    </div>
-
-    <div class="setup-body">
-      <div class="app-title">
-        <div class="app-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-            <circle cx="12" cy="13" r="4"/>
-          </svg>
-        </div>
-        <div>
-          <div class="app-name">ストコンカメラ</div>
-          <div class="app-version">競合店視察モード · v6</div>
-        </div>
+    <section id="cameraView" aria-label="撮影画面">
+      <div id="cameraStage" class="camera-stage">
+        <video id="video" autoplay muted playsinline></video>
+        <div id="cameraHelp" class="camera-help" hidden><div id="cameraHelpText"></div><button id="retryCamera" class="solid" type="button">カメラを再試行</button></div>
+        <span id="stageLabel" class="stage-label">横長 4:3</span>
       </div>
-
-      <div class="form-card">
-        <div class="form-row">
-          <div class="form-label">
-            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
-            </svg>
-            競合店名
+      <div class="controls">
+        <div class="tool-row">
+          <div class="segmented" role="group" aria-label="倍率">
+            <button id="zoom05" type="button" data-zoom="0.5" hidden>0.5x</button>
+            <button id="zoom1" type="button" data-zoom="1">1x</button>
+            <button id="zoom2" type="button" data-zoom="2">2x</button>
           </div>
-          <input type="text" id="storeName" placeholder="例: ライバルA店" list="storeList" autocomplete="off">
-          <datalist id="storeList">
-            <option value="〇〇ホーム 福島店"></option>
-            <option value="〇〇マート 郡山店"></option>
-            <option value="〇〇センター 会津店"></option>
-          </datalist>
+          <button id="torchButton" class="tool-button" type="button" hidden>ライト OFF</button>
+          <button id="orientationButton" class="tool-button" type="button">横長</button>
         </div>
-        <div class="form-row">
-          <div class="form-label">
-            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-            </svg>
-            メモ
-          </div>
-          <input type="text" id="memo" placeholder="メモを入力..." autocomplete="off">
-        </div>
-        <div class="form-row">
-          <div class="toggle-row">
-            <span class="toggle-label">
-              <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/>
-                <line x1="12" y1="4" x2="12" y2="20"/>
-              </svg>
-              透かし文字
-            </span>
-            <label class="toggle">
-              <input type="checkbox" id="watermark" checked>
-              <span class="toggle-track"></span>
-            </label>
-          </div>
-        </div>
+        <div class="shutter-row"><button id="shutterButton" class="shutter" type="button" aria-label="撮影" disabled><span></span></button></div>
+        <div><label for="nameInput" class="field-label">保存名</label><input id="nameInput" class="name-input" type="text" maxlength="80" autocomplete="off" placeholder="例：売場写真"></div>
+        <div class="setting-row"><p>保存先：<strong id="destinationLabel">写真アプリ</strong><br><span id="locationState" class="muted">位置情報は撮影時に取得します</span></p><button id="settingsButton" class="outline" type="button">保存先設定</button></div>
       </div>
+    </section>
 
-      <button class="btn-start" id="toShootModeBtn">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-          <circle cx="12" cy="13" r="4"/>
-        </svg>
-        撮影モードへ
-      </button>
-    </div>
-  </div>
+    <section id="reviewView" class="review" aria-label="撮影結果" hidden>
+      <img id="reviewImage" alt="撮影した写真">
+      <div><h2>撮影しました</h2><p id="fileName" class="muted"></p><p id="gpsInfo" class="muted"></p></div>
+      <p id="reviewStatus" class="status" role="status">JPEGを準備しています…</p>
+      <div class="review-actions"><button id="saveButton" class="solid" type="button" disabled>保存する</button><button id="downloadButton" class="outline" type="button" hidden>JPEGをダウンロード</button><button id="reviewSettingsButton" class="outline" type="button">保存先設定</button><button id="backButton" class="outline" type="button">カメラに戻る</button></div>
+    </section>
+  </main>
 
-  <!-- Shoot Screen -->
-  <div id="shootScreen" class="screen">
-    <div class="shoot-video-wrap">
-      <video id="videoShoot" autoplay playsinline></video>
-      <div class="shoot-store-badge" id="shootStoreBadge">店舗未入力</div>
-      <div class="shoot-memo-badge" id="memoCountBadge">0 件</div>
-    </div>
-
-    <div class="shoot-controls">
-      <div class="zoom-bar">
-        <span class="zoom-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-            <line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/>
-          </svg>
-        </span>
-        <input type="range" id="zoomSlider" min="1" max="3" step="0.1" value="1">
-        <span class="zoom-val" id="zoomValue">1.0x</span>
-      </div>
-
-      <div class="shutter-area">
-        <button class="shutter-btn" id="snapBtn" aria-label="撮影">
-          <div class="shutter-inner"></div>
-        </button>
-      </div>
-
-      <div class="shoot-actions">
-        <div class="count-row">撮影メモ <strong id="memoCount">0</strong> 件</div>
-
-        <button class="btn-csv" id="downloadCsvBtn">
-          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-            <polyline points="14 2 14 8 20 8"/>
-            <line x1="12" y1="18" x2="12" y2="12"/>
-            <polyline points="9 15 12 18 15 15"/>
-          </svg>
-          メモ台帳を保存（Excel用）
-        </button>
-
-        <button class="btn-back" id="toSetupModeBtn">
-          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="15 18 9 12 15 6"/>
-          </svg>
-          設定に戻る
-        </button>
+  <div id="settingsPanel" class="panel" hidden>
+    <div class="panel-card" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+      <div class="panel-head"><h2 id="settingsTitle">保存先設定</h2><button id="closeSettings" class="outline" type="button">閉じる</button></div>
+      <fieldset><legend>撮影後の保存先</legend><div class="radio-list"><label><input type="radio" name="destination" value="photos">写真アプリ</label><label><input type="radio" name="destination" value="onedrive">OneDrive</label><label><input type="radio" name="destination" value="both">両方</label></div></fieldset>
+      <p class="muted">写真アプリへの保存は撮影後の共有画面で「画像を保存」を選んでください。</p>
+      <div class="panel-section">
+        <h3>OneDrive 接続</h3>
+        <p class="muted">Microsoft Entra のアプリ登録が必要です。設定方法は同梱の「導入手順.md」を参照してください。</p>
+        <label for="clientIdInput" class="field-label">アプリケーション（クライアント）ID</label>
+        <input id="clientIdInput" class="name-input" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+        <div class="muted">登録するリダイレクトURI：</div><div id="redirectUri" class="redirect"></div>
+        <div class="button-pair"><button id="connectButton" class="solid" type="button">Microsoftに接続</button><button id="disconnectButton" class="outline" type="button">接続を解除</button></div>
+        <p id="accountLabel" class="muted">未接続</p>
+        <div class="button-pair"><button id="chooseFolderButton" class="outline" type="button">保存フォルダを選ぶ</button></div>
+        <p id="folderLabel" class="muted">フォルダ未設定</p>
       </div>
     </div>
   </div>
 
-  <canvas id="canvas" style="display:none"></canvas>
+  <div id="folderPanel" class="panel" hidden>
+    <div class="panel-card" role="dialog" aria-modal="true" aria-labelledby="folderTitle">
+      <div class="panel-head"><h2 id="folderTitle">OneDrive フォルダ</h2><button id="closeFolder" class="outline" type="button">閉じる</button></div>
+      <p id="folderPath" class="folder-path">読み込み中…</p>
+      <div class="button-pair"><button id="folderBack" class="outline" type="button">上の階層へ</button><button id="selectFolder" class="solid" type="button">このフォルダに保存</button></div>
+      <div id="folderList" class="folder-list"></div>
+      <p id="folderMessage" class="muted"></p>
+    </div>
+  </div>
 
   <script>
-    const canvas = document.getElementById('canvas');
-    let memoList = [];
-    let currentZoom = 1;
-    let stream = null;
+    "use strict";
+    const $ = id => document.getElementById(id);
+    const SETTINGS_KEY = "stocon-camera-settings-v1";
+    const TOKEN_KEY = "stocon-camera-graph-token-v1";
+    const AUTH_KEY = "stocon-camera-auth-v1";
+    const GRAPH = "https://graph.microsoft.com/v1.0";
+    const AUTHORITY = "https://login.microsoftonline.com/common/oauth2/v2.0";
+    const SCOPES = "Files.ReadWrite User.Read offline_access";
+    const redirectUri = new URL("./", location.href).href;
 
-    // カメラ起動
-    function startCamera(videoEl) {
-      if (stream) {
-        videoEl.srcObject = stream;
+    function readStore(key, storage) { try { return JSON.parse(storage.getItem(key)); } catch { return null; } }
+    function writeStore(key, value, storage) { try { storage.setItem(key, JSON.stringify(value)); } catch { /* Storage can be disabled. */ } }
+    const saved = readStore(SETTINGS_KEY, localStorage) || {};
+    const state = {
+      name: typeof saved.name === "string" ? saved.name : "",
+      orientation: saved.orientation === "portrait" ? "portrait" : "landscape",
+      destination: ["photos", "onedrive", "both"].includes(saved.destination) ? saved.destination : "photos",
+      zoom: [0.5, 1, 2].includes(saved.zoom) ? saved.zoom : 1,
+      torch: saved.torch === true,
+      clientId: typeof saved.clientId === "string" ? saved.clientId : "",
+      folder: saved.folder && typeof saved.folder.id === "string" ? saved.folder : null,
+      stream: null, track: null, baseId: null, ultraId: null, nativeHalf: false,
+      digitalZoom: 1, nativeZoom: null, cameraBusy: false, torchAvailable: false, shot: null,
+      tokens: readStore(TOKEN_KEY, sessionStorage), account: null, drive: null, folderStack: []
+    };
+
+    function persistSettings() {
+      writeStore(SETTINGS_KEY, {
+        name: state.name, orientation: state.orientation, destination: state.destination,
+        zoom: state.zoom, torch: state.torch, clientId: state.clientId, folder: state.folder
+      }, localStorage);
+    }
+    function setStatus(message, error = false) {
+      $("status").textContent = message;
+      $("status").classList.toggle("error", error);
+      $("status").hidden = !message;
+    }
+    function destinationText() { return { photos: "写真アプリ", onedrive: "OneDrive", both: "両方" }[state.destination]; }
+    function updateSettingsUI() {
+      $("destinationLabel").textContent = destinationText();
+      document.querySelector(`input[name="destination"][value="${state.destination}"]`).checked = true;
+      $("folderLabel").textContent = state.folder ? `保存フォルダ：${state.folder.path}` : "フォルダ未設定";
+      $("accountLabel").textContent = state.account ? `接続中：${state.account.displayName || state.account.userPrincipalName || "Microsoft アカウント"}` : "未接続（接続時はMicrosoftの画面に移動します）";
+    }
+    function updateOrientationUI() {
+      const portrait = state.orientation === "portrait";
+      $("cameraStage").classList.toggle("portrait", portrait);
+      $("orientationButton").textContent = portrait ? "縦長" : "横長";
+      $("stageLabel").textContent = portrait ? "縦長 3:4" : "横長 4:3";
+    }
+    function updateZoomUI() {
+      for (const value of [0.5, 1, 2]) {
+        const button = $(value === 0.5 ? "zoom05" : `zoom${value}`);
+        button.classList.toggle("active", state.zoom === value);
+        button.setAttribute("aria-pressed", String(state.zoom === value));
+      }
+      $("zoom05").hidden = !(state.nativeHalf || state.ultraId);
+      $("video").style.transform = `scale(${state.digitalZoom})`;
+    }
+    function updateTorchUI() {
+      $("torchButton").hidden = !state.torchAvailable;
+      $("torchButton").textContent = state.torch ? "ライト ON" : "ライト OFF";
+      $("torchButton").classList.toggle("active", state.torch);
+    }
+    function cameraMessage(error) {
+      if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) return "カメラを使えません。GitHub Pages の HTTPS URL を Safari または Chrome で開いてください。";
+      if (error?.name === "NotAllowedError" || error?.name === "PermissionDeniedError") return "カメラの使用が拒否されました。ブラウザのサイト設定でカメラを許可して再試行してください。";
+      if (error?.name === "NotFoundError") return "背面カメラが見つかりません。端末のカメラをご確認ください。";
+      if (error?.name === "NotReadableError") return "カメラを開けません。他のカメラアプリを閉じて再試行してください。";
+      return `カメラを開始できませんでした（${error?.name || "不明なエラー"}）。再試行してください。`;
+    }
+    function stopCamera() {
+      if (state.stream) state.stream.getTracks().forEach(track => track.stop());
+      state.stream = null; state.track = null; $("video").srcObject = null;
+    }
+    async function openCamera(deviceId = null) {
+      if (state.cameraBusy) return false;
+      state.cameraBusy = true;
+      $("shutterButton").disabled = true;
+      $("cameraHelp").hidden = true;
+      stopCamera();
+      state.nativeZoom = null;
+      try {
+        const source = deviceId ? { deviceId: { exact: deviceId } } : { facingMode: { ideal: "environment" } };
+        let stream;
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: { ...source, width: { ideal: 3840 }, height: { ideal: 2880 }, frameRate: { ideal: 30 } } });
+        } catch (error) {
+          if (error.name !== "OverconstrainedError") throw error;
+          stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: source });
+        }
+        state.stream = stream;
+        state.track = stream.getVideoTracks()[0];
+        if (!deviceId) state.baseId = state.track.getSettings?.().deviceId || null;
+        $("video").srcObject = stream;
+        await $("video").play();
+        const caps = state.track.getCapabilities?.() || {};
+        state.torchAvailable = caps.torch === true || (Array.isArray(caps.torch) && caps.torch.includes(true));
+        if (!state.torchAvailable) state.torch = false;
+        if (!deviceId) state.nativeHalf = !!(caps.zoom && caps.zoom.min <= 0.5 && caps.zoom.max >= 0.5);
+        $("cameraInfo").textContent = `${$("video").videoWidth} × ${$("video").videoHeight}`;
+        $("shutterButton").disabled = false;
+        updateTorchUI();
+        return true;
+      } catch (error) {
+        $("cameraHelpText").textContent = cameraMessage(error);
+        $("cameraHelp").hidden = false;
+        setStatus(cameraMessage(error), true);
+        return false;
+      } finally { state.cameraBusy = false; }
+    }
+    async function discoverCameras() {
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const rear = devices.filter(d => d.kind === "videoinput" && /back|rear|environment|背面|アウト/i.test(d.label));
+        state.ultraId = rear.find(d => /ultra[ -]?wide|超広角|0[.,]5/i.test(d.label))?.deviceId || null;
+      } catch { state.ultraId = null; }
+      updateZoomUI();
+    }
+    async function applyTorch() {
+      if (!state.track || !state.torchAvailable) return;
+      const controls = { torch: state.torch };
+      if (state.nativeZoom !== null) controls.zoom = state.nativeZoom;
+      try { await state.track.applyConstraints({ advanced: [controls] }); }
+      catch {
+        state.torch = false; state.torchAvailable = false; updateTorchUI();
+        setStatus("このブラウザではライトの切り替えを利用できません。", true);
+      }
+    }
+    async function applyZoom(value) {
+      if (!state.track || state.cameraBusy) return;
+      if (value === 0.5 && !(state.nativeHalf || state.ultraId)) return;
+      let onUltra = !!(state.ultraId && state.track.getSettings?.().deviceId === state.ultraId);
+      if (value === 0.5 && !state.nativeHalf && state.ultraId && !onUltra) {
+        if (!await openCamera(state.ultraId)) {
+          state.ultraId = null;
+          await openCamera(state.baseId || null);
+          value = 1;
+        } else onUltra = true;
+      } else if (value !== 0.5 && onUltra) {
+        if (!await openCamera(state.baseId || null)) return;
+        onUltra = false;
+      }
+      let nativeApplied = false;
+      const caps = state.track?.getCapabilities?.() || {};
+      const target = value === 0.5 ? 0.5 : value;
+      if (caps.zoom && caps.zoom.min <= target && caps.zoom.max >= target) {
+        try {
+          const controls = { zoom: target };
+          if (state.torchAvailable) controls.torch = state.torch;
+          await state.track.applyConstraints({ advanced: [controls] });
+          nativeApplied = Math.abs((state.track.getSettings?.().zoom ?? target) - target) < 0.1;
+        } catch { /* Use a crop for 2x. */ }
+      }
+      if (value === 0.5 && !nativeApplied && !onUltra) {
+        if (state.ultraId && await openCamera(state.ultraId)) { nativeApplied = true; onUltra = true; }
+        else {
+          state.nativeHalf = false; state.ultraId = null; value = 1;
+          setStatus("この端末では0.5xを利用できません。", true);
+        }
+      }
+      state.nativeZoom = nativeApplied && !onUltra ? target : null;
+      state.digitalZoom = value === 2 && !nativeApplied ? 2 : 1;
+      state.zoom = value;
+      persistSettings();
+      updateZoomUI();
+      if (state.torch) await applyTorch();
+    }
+    async function startCamera() {
+      if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
+        $("cameraHelpText").textContent = cameraMessage();
+        $("cameraHelp").hidden = false;
         return;
       }
-      navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-        .then(s => { stream = s; videoEl.srcObject = s; })
-        .catch(() => alert('カメラの起動が許可されていません。'));
+      if (!await openCamera()) return;
+      await discoverCameras();
+      const wanted = state.zoom;
+      state.zoom = 1;
+      if (wanted !== 1) await applyZoom(wanted);
+      else updateZoomUI();
+      if (state.torch) await applyTorch();
+      setStatus("");
     }
 
-    startCamera(document.getElementById('video'));
+    function pad(n) { return String(n).padStart(2, "0"); }
+    function timestamp(date) { return `${date.getFullYear()}${pad(date.getMonth()+1)}${pad(date.getDate())}_${pad(date.getHours())}${pad(date.getMinutes())}${pad(date.getSeconds())}`; }
+    function fileName(date) {
+      const base = (state.name.trim() || "写真").replace(/[<>:"/\\|?*#%\u0000-\u001f]/g, "_").replace(/[. ]+$/g, "").slice(0, 80) || "写真";
+      return `${base}_${timestamp(date)}.jpg`;
+    }
+    function positionAtCapture() {
+      return new Promise(resolve => {
+        if (!navigator.geolocation) return resolve({ error: "このブラウザでは位置情報を利用できません。" });
+        navigator.geolocation.getCurrentPosition(
+          position => resolve({ position }),
+          error => resolve({ error: error.code === 1 ? "位置情報が拒否されました。Safari/ブラウザのサイト設定で位置情報を許可してください。" : error.code === 3 ? "位置情報の取得が時間切れになりました。位置情報なしで保存できます。" : "位置情報を取得できませんでした。位置情報なしで保存できます。" }),
+          { enableHighAccuracy: true, timeout: 8000, maximumAge: 15000 }
+        );
+      });
+    }
+    function canvasBlob(canvas) {
+      return new Promise((resolve, reject) => canvas.toBlob(blob => blob?.type === "image/jpeg" ? resolve(blob) : reject(new Error("JPEGへの変換に失敗しました。")), "image/jpeg", 0.95));
+    }
+    function captureCanvas() {
+      const video = $("video");
+      const vw = video.videoWidth, vh = video.videoHeight;
+      if (!vw || !vh) throw new Error("カメラ映像の準備ができていません。");
+      const wide = state.orientation === "landscape";
+      const ratio = wide ? 4/3 : 3/4;
+      const cropW = Math.min(vw, vh * ratio) / state.digitalZoom;
+      const cropH = cropW / ratio;
+      const unit = Math.floor(Math.min(cropW / (wide ? 4 : 3), cropH / (wide ? 3 : 4)));
+      if (unit < 1) throw new Error("撮影サイズが小さすぎます。");
+      const canvas = document.createElement("canvas");
+      canvas.width = unit * (wide ? 4 : 3);
+      canvas.height = unit * (wide ? 3 : 4);
+      const context = canvas.getContext("2d", { alpha: false });
+      if (!context) throw new Error("画像を作成できません。");
+      context.drawImage(video, (vw - cropW)/2, (vh - cropH)/2, cropW, cropH, 0, 0, canvas.width, canvas.height);
+      return canvas;
+    }
 
-    // 撮影モードへ
-    document.getElementById('toShootModeBtn').addEventListener('click', () => {
-      const store = document.getElementById('storeName').value || '店舗未入力';
-      document.getElementById('shootStoreBadge').textContent = store;
-      document.getElementById('setupScreen').classList.remove('active');
-      document.getElementById('shootScreen').classList.add('active');
-      const videoShoot = document.getElementById('videoShoot');
-      startCamera(videoShoot);
-    });
-
-    // 設定に戻る
-    document.getElementById('toSetupModeBtn').addEventListener('click', () => {
-      document.getElementById('shootScreen').classList.remove('active');
-      document.getElementById('setupScreen').classList.add('active');
-    });
-
-    // ズーム
-    document.getElementById('zoomSlider').addEventListener('input', e => {
-      currentZoom = parseFloat(e.target.value);
-      document.getElementById('zoomValue').textContent = currentZoom.toFixed(1) + 'x';
-      document.getElementById('videoShoot').style.transform = `scale(${currentZoom})`;
-    });
-
-    // 撮影
-    document.getElementById('snapBtn').addEventListener('click', () => {
-      const videoShoot = document.getElementById('videoShoot');
-      const ctx = canvas.getContext('2d');
-      canvas.width = videoShoot.videoWidth;
-      canvas.height = videoShoot.videoHeight;
-
-      const sw = videoShoot.videoWidth / currentZoom;
-      const sh = videoShoot.videoHeight / currentZoom;
-      const sx = (videoShoot.videoWidth - sw) / 2;
-      const sy = (videoShoot.videoHeight - sh) / 2;
-      ctx.drawImage(videoShoot, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
-
-      const store = document.getElementById('storeName').value || '店舗未入力';
-      const memoText = document.getElementById('memo').value;
-      const now = new Date();
-      const timeString = now.toLocaleDateString('ja-JP') + ' ' + now.toLocaleTimeString('ja-JP');
-      memoList.push({ time: timeString, store, memo: memoText });
-
-      const count = memoList.length;
-      document.getElementById('memoCount').textContent = count;
-      document.getElementById('memoCountBadge').textContent = count + ' 件';
-      document.getElementById('shootStoreBadge').textContent = store;
-      document.getElementById('memo').value = '';
-
-      if (document.getElementById('watermark').checked) {
-        ctx.font = 'bold 18px -apple-system, sans-serif';
-        ctx.fillStyle = 'rgba(255,255,255,0.5)';
-        ctx.textAlign = 'right';
-        ctx.fillText(store, canvas.width - 16, canvas.height - 16);
+    // Add a small EXIF APP1 segment. Canvas JPEGs otherwise lose camera/location metadata.
+    async function withGpsExif(jpeg, position, date) {
+      const bytes = new Uint8Array(await jpeg.arrayBuffer());
+      if (bytes[0] !== 0xff || bytes[1] !== 0xd8) throw new Error("JPEG形式を確認できません。");
+      const tiff = new Uint8Array(184);
+      const view = new DataView(tiff.buffer);
+      tiff.set([0x49, 0x49, 0x2a, 0x00]);
+      view.setUint32(4, 8, true);
+      function entry(at, tag, type, count, value) {
+        view.setUint16(at, tag, true); view.setUint16(at+2, type, true);
+        view.setUint32(at+4, count, true); view.setUint32(at+8, value, true);
       }
-
-      canvas.toBlob(blob => {
-        const file = new File([blob], `stcon_${Date.now()}.jpg`, { type: 'image/jpeg' });
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          navigator.share({ files: [file] }).catch(console.error);
-        } else {
-          const a = document.createElement('a');
-          a.download = file.name;
-          a.href = URL.createObjectURL(blob);
-          a.click();
+      const dateText = `${date.getFullYear()}:${pad(date.getMonth()+1)}:${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}\0`;
+      view.setUint16(8, 3, true);
+      entry(10, 0x0112, 3, 1, 1);           // Orientation: pixels already upright.
+      entry(22, 0x0132, 2, 20, 164);       // DateTime.
+      entry(34, 0x8825, 4, 1, 50);        // GPS IFD pointer.
+      view.setUint32(46, 0, true);
+      view.setUint16(50, 5, true);
+      entry(52, 0x0000, 1, 4, 0x00000302); // GPS version 2.3.0.0.
+      entry(64, 0x0001, 2, 2, position.coords.latitude < 0 ? 83 : 78); // S/N.
+      entry(76, 0x0002, 5, 3, 116);
+      entry(88, 0x0003, 2, 2, position.coords.longitude < 0 ? 87 : 69); // W/E.
+      entry(100, 0x0004, 5, 3, 140);
+      view.setUint32(112, 0, true);
+      function writeDms(offset, decimal) {
+        const absolute = Math.abs(decimal);
+        const degrees = Math.floor(absolute);
+        const minutesFull = (absolute - degrees) * 60;
+        const minutes = Math.floor(minutesFull);
+        const secondsMicro = Math.round((minutesFull - minutes) * 60 * 1000000);
+        for (const [index, numerator, denominator] of [[0, degrees, 1], [1, minutes, 1], [2, secondsMicro, 1000000]]) {
+          view.setUint32(offset + index*8, numerator, true);
+          view.setUint32(offset + index*8 + 4, denominator, true);
         }
-      }, 'image/jpeg');
-    });
-
-    // CSV保存
-    document.getElementById('downloadCsvBtn').addEventListener('click', () => {
-      if (memoList.length === 0) { alert('まだメモが記録されていません。'); return; }
-      let csv = '\uFEFF日時,視察店舗,メモ\n';
-      memoList.forEach(r => { csv += `${r.time},"${r.store}","${r.memo}"\n`; });
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = `stcon_memo_${Date.now()}.csv`;
-      a.click();
-      if (confirm('メモをダウンロードしました。記録をリセットして次の視察を始めますか？')) {
-        memoList = [];
-        document.getElementById('memoCount').textContent = '0';
-        document.getElementById('memoCountBadge').textContent = '0 件';
       }
-    });
+      writeDms(116, position.coords.latitude);
+      writeDms(140, position.coords.longitude);
+      for (let i = 0; i < dateText.length; i++) tiff[164+i] = dateText.charCodeAt(i);
+      const header = new Uint8Array([0x45,0x78,0x69,0x66,0,0]);
+      const appLength = 2 + header.length + tiff.length;
+      const segment = new Uint8Array(4 + header.length + tiff.length);
+      segment.set([0xff, 0xe1, appLength >> 8, appLength & 255]);
+      segment.set(header, 4); segment.set(tiff, 4 + header.length);
+      return new Blob([bytes.slice(0, 2), segment, bytes.slice(2)], { type: "image/jpeg" });
+    }
+    function updateReviewImage(blob) {
+      const url = URL.createObjectURL(blob);
+      const old = $("reviewImage").src;
+      $("reviewImage").src = url;
+      if (old.startsWith("blob:")) URL.revokeObjectURL(old);
+    }
+    function reviewMessage(message, error = false) {
+      $("reviewStatus").textContent = message;
+      $("reviewStatus").classList.toggle("error", error);
+    }
+    async function takePhoto() {
+      if (!state.track || state.cameraBusy || state.shot) return;
+      const date = new Date();
+      let canvas;
+      try { canvas = captureCanvas(); }
+      catch (error) { setStatus(error.message, true); return; }
+      const locationPromise = positionAtCapture();
+      $("shutterButton").disabled = true;
+      $("cameraView").hidden = true; $("reviewView").hidden = false;
+      $("saveButton").disabled = true;
+      $("backButton").disabled = true;
+      $("reviewSettingsButton").disabled = true;
+      $("downloadButton").hidden = true;
+      $("gpsInfo").textContent = "位置情報を取得中…";
+      $("fileName").textContent = fileName(date);
+      reviewMessage("JPEGを準備しています…");
+      try {
+        let blob = await canvasBlob(canvas);
+        updateReviewImage(blob);
+        reviewMessage("位置情報を確認しています…");
+        const result = await locationPromise;
+        if (result.position) {
+          blob = await withGpsExif(blob, result.position, date);
+          updateReviewImage(blob);
+          const { latitude, longitude } = result.position.coords;
+          $("gpsInfo").textContent = `位置情報：${latitude.toFixed(6)}, ${longitude.toFixed(6)}（JPEGに記録）`;
+          $("locationState").textContent = "位置情報をJPEGに記録しました";
+        } else {
+          $("gpsInfo").textContent = result.error;
+          $("locationState").textContent = "位置情報なし：権限または受信状況を確認";
+        }
+        const name = fileName(date);
+        state.shot = { blob, file: new File([blob], name, { type: "image/jpeg", lastModified: date.getTime() }), uploaded: false, shared: false };
+        reviewMessage(result.position ? "保存するを押してください。" : "位置情報なしで保存できます。", !result.position);
+        $("saveButton").disabled = false;
+      } catch (error) {
+        reviewMessage(`撮影した画像を準備できませんでした：${error.message}`, true);
+      } finally { $("backButton").disabled = false; $("reviewSettingsButton").disabled = false; }
+    }
+    function returnToCamera() {
+      state.shot = null;
+      $("reviewView").hidden = true; $("cameraView").hidden = false;
+      const old = $("reviewImage").src;
+      $("reviewImage").removeAttribute("src");
+      if (old.startsWith("blob:")) URL.revokeObjectURL(old);
+      $("shutterButton").disabled = !state.track;
+      $("video").play().catch(() => startCamera());
+    }
+
+    function saveTokens(data) {
+      state.tokens = {
+        access_token: data.access_token, refresh_token: data.refresh_token || state.tokens?.refresh_token || null,
+        expires_at: Date.now() + (Number(data.expires_in) || 3600) * 1000
+      };
+      writeStore(TOKEN_KEY, state.tokens, sessionStorage);
+    }
+    function clearTokens() {
+      state.tokens = null; state.account = null; state.drive = null;
+      try { sessionStorage.removeItem(TOKEN_KEY); } catch { /* Ignore. */ }
+      updateSettingsUI();
+    }
+    let refreshPromise = null;
+    async function tokenRequest(parameters) {
+      const response = await fetch(`${AUTHORITY}/token`, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: new URLSearchParams(parameters) });
+      const data = await response.json();
+      if (!response.ok || !data.access_token) throw new Error(data.error_description || data.error || "Microsoft認証に失敗しました。");
+      saveTokens(data);
+      return state.tokens.access_token;
+    }
+    async function accessToken() {
+      if (state.tokens?.access_token && state.tokens.expires_at > Date.now() + 60000) return state.tokens.access_token;
+      if (state.tokens?.refresh_token && state.clientId) {
+        if (!refreshPromise) {
+          refreshPromise = tokenRequest({ client_id: state.clientId, grant_type: "refresh_token", refresh_token: state.tokens.refresh_token, scope: SCOPES }).finally(() => { refreshPromise = null; });
+        }
+        try { return await refreshPromise; }
+        catch { clearTokens(); }
+      }
+      throw new Error("OneDriveの接続が必要です。保存先設定からMicrosoftに接続してください。");
+    }
+    function randomUrlSafe(length) {
+      const bytes = crypto.getRandomValues(new Uint8Array(length));
+      return btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+    }
+    async function connectMicrosoft() {
+      if (state.shot) {
+        $("settingsPanel").hidden = true;
+        $("downloadButton").hidden = false;
+        reviewMessage("Microsoftの接続画面に移動すると今回の写真が消えます。先にJPEGをダウンロードし、カメラに戻ってから接続してください。", true);
+        return;
+      }
+      const clientId = $("clientIdInput").value.trim();
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(clientId)) {
+        setStatus("MicrosoftのアプリケーションIDを正しく入力してください。", true); return;
+      }
+      state.clientId = clientId; persistSettings();
+      const verifier = randomUrlSafe(48), authState = randomUrlSafe(16);
+      const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier)));
+      const challenge = btoa(String.fromCharCode(...digest)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+      writeStore(AUTH_KEY, { verifier, authState, redirectUri }, sessionStorage);
+      const params = new URLSearchParams({ client_id: clientId, response_type: "code", redirect_uri: redirectUri, response_mode: "query", scope: SCOPES, state: authState, code_challenge: challenge, code_challenge_method: "S256" });
+      location.assign(`${AUTHORITY}/authorize?${params}`);
+    }
+    async function finishMicrosoftRedirect() {
+      const params = new URLSearchParams(location.search);
+      if (!params.has("code") && !params.has("error")) return;
+      const pending = readStore(AUTH_KEY, sessionStorage);
+      try { sessionStorage.removeItem(AUTH_KEY); } catch { /* Ignore. */ }
+      history.replaceState(null, "", location.pathname + location.hash);
+      if (params.has("error")) { setStatus(`Microsoft認証：${params.get("error_description") || params.get("error")}`, true); return; }
+      if (!pending || pending.authState !== params.get("state") || !state.clientId) { setStatus("Microsoft認証の確認に失敗しました。接続をやり直してください。", true); return; }
+      try {
+        await tokenRequest({ client_id: state.clientId, grant_type: "authorization_code", code: params.get("code"), redirect_uri: pending.redirectUri, code_verifier: pending.verifier, scope: SCOPES });
+        await loadAccountAndDrive();
+        setStatus("OneDriveに接続しました。保存フォルダを選んでください。");
+        $("settingsPanel").hidden = false;
+      } catch (error) { setStatus(`OneDrive接続に失敗しました：${error.message}`, true); }
+    }
+    async function graphRequest(path, options = {}) {
+      const url = path.startsWith("https://") ? path : GRAPH + path;
+      if (!url.startsWith(GRAPH + "/")) throw new Error("OneDriveの応答URLを確認できません。");
+      const token = await accessToken();
+      const response = await fetch(url, { ...options, headers: { Authorization: `Bearer ${token}`, ...(options.headers || {}) } });
+      if (!response.ok) {
+        let message = `Microsoft Graph エラー ${response.status}`;
+        try { const data = await response.json(); message = data.error?.message || message; } catch { /* Ignore. */ }
+        throw new Error(message);
+      }
+      return response.json();
+    }
+    async function loadAccountAndDrive() {
+      const [account, drive] = await Promise.all([graphRequest("/me?$select=id,displayName,userPrincipalName"), graphRequest("/me/drive?$select=id,driveType")]);
+      state.account = account; state.drive = drive;
+      if (state.folder && (state.folder.accountId !== account.id || state.folder.driveId !== drive.id)) {
+        state.folder = null; persistSettings();
+        setStatus("接続したアカウントが変わったため、保存フォルダを選び直してください。", true);
+      }
+      updateSettingsUI();
+    }
+    async function ensureDrive() { if (!state.account || !state.drive) await loadAccountAndDrive(); }
+    async function chooseFolder() {
+      $("folderPanel").hidden = false;
+      $("folderMessage").textContent = "読み込み中…";
+      try {
+        await ensureDrive();
+        const root = await graphRequest("/me/drive/root?$select=id,name");
+        state.folderStack = [{ id: root.id, name: "OneDrive" }];
+        await renderFolder();
+      } catch (error) { $("folderMessage").textContent = error.message; }
+    }
+    async function renderFolder() {
+      const current = state.folderStack.at(-1);
+      if (!current) return;
+      $("folderPath").textContent = state.folderStack.map(f => f.name).join(" / ");
+      $("folderBack").disabled = state.folderStack.length <= 1;
+      $("folderList").replaceChildren();
+      $("folderMessage").textContent = "フォルダを読み込み中…";
+      try {
+        let next = `/drives/${encodeURIComponent(state.drive.id)}/items/${encodeURIComponent(current.id)}/children?$select=id,name,folder&$top=200`;
+        const folders = [];
+        while (next) {
+          const page = await graphRequest(next);
+          folders.push(...(page.value || []).filter(item => item.folder));
+          next = page["@odata.nextLink"] || null;
+        }
+        folders.sort((a, b) => a.name.localeCompare(b.name, "ja"));
+        for (const folder of folders) {
+          const button = document.createElement("button");
+          button.type = "button"; button.textContent = `📁 ${folder.name}`;
+          button.addEventListener("click", async () => { state.folderStack.push({ id: folder.id, name: folder.name }); await renderFolder(); });
+          $("folderList").append(button);
+        }
+        $("folderMessage").textContent = folders.length ? "フォルダを開くか、現在のフォルダを選択してください。" : "この階層に子フォルダはありません。";
+      } catch (error) { $("folderMessage").textContent = `フォルダを開けません：${error.message}`; }
+    }
+    function selectFolder() {
+      const current = state.folderStack.at(-1);
+      if (!current || !state.account || !state.drive) return;
+      state.folder = { id: current.id, driveId: state.drive.id, accountId: state.account.id, path: state.folderStack.map(f => f.name).join(" / ") };
+      persistSettings(); updateSettingsUI();
+      $("folderPanel").hidden = true;
+      setStatus(`OneDrive保存先：${state.folder.path}`);
+    }
+    async function uploadShot() {
+      if (state.shot.uploaded) return;
+      if (!state.folder) throw new Error("OneDriveの保存フォルダが未設定です。保存先設定から選んでください。");
+      await ensureDrive();
+      if (state.folder.accountId !== state.account.id || state.folder.driveId !== state.drive.id) throw new Error("保存フォルダのアカウントが違います。フォルダを選び直してください。");
+      if (state.shot.blob.size > 250 * 1024 * 1024) throw new Error("OneDriveの単一ファイル上限を超えています。");
+      const path = `/drives/${encodeURIComponent(state.folder.driveId)}/items/${encodeURIComponent(state.folder.id)}:/${encodeURIComponent(state.shot.file.name)}:/content`;
+      await graphRequest(path, { method: "PUT", headers: { "Content-Type": "image/jpeg" }, body: state.shot.blob });
+      state.shot.uploaded = true;
+    }
+    function canShareFile(file) { return !!(navigator.share && navigator.canShare?.({ files: [file] })); }
+    function updateSaveButton() {
+      if (!state.shot) return;
+      const photosDone = state.destination === "onedrive" || state.shot.shared;
+      const driveDone = state.destination === "photos" || state.shot.uploaded;
+      $("saveButton").disabled = photosDone && driveDone;
+    }
+    async function saveShot() {
+      const shot = state.shot;
+      if (!shot) return;
+      $("saveButton").disabled = true;
+      $("backButton").disabled = true;
+      $("reviewSettingsButton").disabled = true;
+      const wantPhotos = state.destination !== "onedrive";
+      const wantDrive = state.destination !== "photos";
+      let photoNote = "", driveNote = "", hadError = false;
+      if (wantPhotos && !shot.shared) {
+        if (canShareFile(shot.file)) {
+          try {
+            // share() must be called directly from this tap. Saving to Photos is chosen in the OS sheet.
+            await navigator.share({ files: [shot.file] });
+            shot.shared = true;
+            photoNote = "共有画面が閉じました。写真アプリに保存したか確認してください。";
+          } catch (error) {
+            hadError = true;
+            photoNote = error.name === "AbortError" ? "共有がキャンセルされました。再度保存を押せます。" : error.name === "NotAllowedError" ? "共有が許可されませんでした。Safariのサイト設定を確認して再試行してください。" : `共有画面を開けませんでした：${error.message}`;
+            $("downloadButton").hidden = false;
+          }
+        } else {
+          hadError = true;
+          photoNote = "このブラウザではJPEG共有を使えません。ダウンロードをご利用ください。";
+          $("downloadButton").hidden = false;
+        }
+      }
+      if (wantDrive && !shot.uploaded) {
+        try { reviewMessage(`${photoNote} OneDriveにアップロード中…`); await uploadShot(); driveNote = "OneDriveに保存しました。"; }
+        catch (error) { hadError = true; driveNote = `OneDrive保存失敗：${error.message}`; $("downloadButton").hidden = false; }
+      }
+      reviewMessage([photoNote, driveNote].filter(Boolean).join(" ") || "保存済みです。", hadError);
+      updateSaveButton();
+      $("backButton").disabled = false;
+      $("reviewSettingsButton").disabled = false;
+    }
+    function downloadShot() {
+      if (!state.shot) return;
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(state.shot.blob);
+      link.href = url; link.download = state.shot.file.name;
+      document.body.append(link); link.click(); link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+      reviewMessage("JPEGをダウンロードしました。iPhoneでは「ファイル」アプリのダウンロード先を確認してください。");
+    }
+
+    $("nameInput").value = state.name;
+    $("clientIdInput").value = state.clientId;
+    $("redirectUri").textContent = redirectUri;
+    updateSettingsUI(); updateOrientationUI(); updateZoomUI(); updateTorchUI();
+    $("nameInput").addEventListener("input", event => { state.name = event.target.value; persistSettings(); });
+    $("orientationButton").addEventListener("click", () => { state.orientation = state.orientation === "landscape" ? "portrait" : "landscape"; persistSettings(); updateOrientationUI(); });
+    for (const button of document.querySelectorAll("[data-zoom]")) button.addEventListener("click", () => applyZoom(Number(button.dataset.zoom)));
+    $("torchButton").addEventListener("click", async () => { state.torch = !state.torch; updateTorchUI(); await applyTorch(); persistSettings(); });
+    $("shutterButton").addEventListener("click", takePhoto);
+    $("retryCamera").addEventListener("click", startCamera);
+    $("settingsButton").addEventListener("click", () => { updateSettingsUI(); $("settingsPanel").hidden = false; });
+    $("reviewSettingsButton").addEventListener("click", () => { updateSettingsUI(); $("settingsPanel").hidden = false; });
+    $("closeSettings").addEventListener("click", () => { $("settingsPanel").hidden = true; });
+    for (const radio of document.querySelectorAll('input[name="destination"]')) radio.addEventListener("change", () => { state.destination = radio.value; persistSettings(); updateSettingsUI(); updateSaveButton(); if (state.destination !== "photos" && !state.folder) setStatus("OneDriveの保存フォルダを設定してください。", true); });
+    $("connectButton").addEventListener("click", connectMicrosoft);
+    $("disconnectButton").addEventListener("click", () => { clearTokens(); setStatus("OneDriveの接続を解除しました。保存フォルダ設定は端末に残ります。"); });
+    $("chooseFolderButton").addEventListener("click", chooseFolder);
+    $("closeFolder").addEventListener("click", () => { $("folderPanel").hidden = true; });
+    $("folderBack").addEventListener("click", async () => { if (state.folderStack.length > 1) { state.folderStack.pop(); await renderFolder(); } });
+    $("selectFolder").addEventListener("click", selectFolder);
+    $("saveButton").addEventListener("click", saveShot);
+    $("downloadButton").addEventListener("click", downloadShot);
+    $("backButton").addEventListener("click", returnToCamera);
+    document.addEventListener("visibilitychange", () => { if (!document.hidden && !state.track && !state.shot) startCamera(); });
+    startCamera();
+    finishMicrosoftRedirect().then(() => { if (state.tokens && !state.account) loadAccountAndDrive().catch(() => {}); });
   </script>
 </body>
 </html>
