@@ -38,11 +38,7 @@
     .shutter { width: 82px; height: 82px; border-radius: 50%; border: 5px solid #176b57; background: #fff; padding: 6px; box-shadow: 0 0 0 3px #d5e5df; }
     .shutter span { display: block; width: 100%; height: 100%; border-radius: 50%; background: #176b57; }
     .shutter:active span { transform: scale(.9); }
-    .field-label { display: block; font-size: 12px; font-weight: 700; margin-bottom: 5px; color: #415366; }
-    .name-input { width: 100%; min-height: 46px; padding: 9px 12px; border: 1px solid #b9c4cd; border-radius: 8px; background: #fff; font-size: 16px; }
-    .setting-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-    .setting-row p { flex: 1; min-width: 0; margin: 0; font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
-    .setting-row button { flex: none; }
+    .gps-state { margin: 0; text-align: center; font-size: 13px; line-height: 1.5; }
     .muted { color: #64748b; font-size: 12px; line-height: 1.5; }
     .solid, .outline { min-height: 44px; border-radius: 9px; padding: 9px 14px; font-weight: 700; }
     .solid { border: 1px solid #176b57; background: #176b57; color: #fff; }
@@ -53,22 +49,7 @@
     .review p { margin: 0; overflow-wrap: anywhere; }
     .review-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
     .review-actions .solid { grid-column: 1 / -1; }
-    .panel { position: fixed; z-index: 10; inset: 0; background: #17212bb3; display: flex; align-items: flex-end; justify-content: center; }
-    .panel-card { width: min(100%, 720px); max-height: 94dvh; overflow: auto; background: #fff; padding: 16px 16px calc(20px + env(safe-area-inset-bottom)); border-radius: 18px 18px 0 0; display: grid; gap: 14px; }
-    .panel-head { display: flex; align-items: center; justify-content: space-between; }
-    .panel-head h2 { font-size: 18px; margin: 0; }
-    fieldset { margin: 0; padding: 12px; border: 1px solid #d0d8de; border-radius: 9px; }
-    legend { font-weight: 700; font-size: 14px; }
-    .radio-list { display: flex; flex-wrap: wrap; gap: 14px; }
-    .radio-list label { display: flex; align-items: center; gap: 5px; min-height: 32px; }
-    .panel-section { display: grid; gap: 9px; padding-top: 4px; border-top: 1px solid #e1e6ea; }
-    .panel-section h3 { margin: 8px 0 0; font-size: 15px; }
-    .button-pair { display: flex; gap: 8px; flex-wrap: wrap; }
-    .redirect { padding: 8px; background: #f2f5f7; border-radius: 6px; overflow-wrap: anywhere; font-size: 12px; }
-    .folder-list { display: grid; gap: 5px; }
-    .folder-list button { min-height: 43px; padding: 8px 12px; border: 1px solid #d0d8de; border-radius: 8px; background: #fff; text-align: left; }
-    .folder-path { font-weight: 700; overflow-wrap: anywhere; }
-    @media (min-width: 721px) { .app { box-shadow: 0 0 24px #00000014; } .panel { align-items: center; } .panel-card { border-radius: 16px; max-height: 90dvh; } }
+    @media (min-width: 721px) { .app { box-shadow: 0 0 24px #00000014; } }
   </style>
 </head>
 <body>
@@ -93,8 +74,7 @@
           <button id="orientationButton" class="tool-button" type="button">横長</button>
         </div>
         <div class="shutter-row"><button id="shutterButton" class="shutter" type="button" aria-label="撮影" disabled><span></span></button></div>
-        <div><label for="nameInput" class="field-label">保存名</label><input id="nameInput" class="name-input" type="text" maxlength="80" autocomplete="off" placeholder="例：売場写真"></div>
-        <div class="setting-row"><p>保存先：<strong id="destinationLabel">写真アプリ</strong><br><span id="locationState" class="muted">位置情報は撮影時に取得します</span></p><button id="settingsButton" class="outline" type="button">保存先設定</button></div>
+        <p id="locationState" class="gps-state muted">撮影時に位置情報を取得します</p>
       </div>
     </section>
 
@@ -102,83 +82,41 @@
       <img id="reviewImage" alt="撮影した写真">
       <div><h2>撮影しました</h2><p id="fileName" class="muted"></p><p id="gpsInfo" class="muted"></p></div>
       <p id="reviewStatus" class="status" role="status">JPEGを準備しています…</p>
-      <div class="review-actions"><button id="saveButton" class="solid" type="button" disabled>保存する</button><button id="downloadButton" class="outline" type="button" hidden>JPEGをダウンロード</button><button id="reviewSettingsButton" class="outline" type="button">保存先設定</button><button id="backButton" class="outline" type="button">カメラに戻る</button></div>
+      <div class="review-actions"><button id="saveButton" class="solid" type="button" disabled>共有して保存</button><button id="downloadButton" class="outline" type="button" hidden>JPEGをダウンロード</button><button id="backButton" class="outline" type="button">撮影に戻る</button></div>
     </section>
   </main>
-
-  <div id="settingsPanel" class="panel" hidden>
-    <div class="panel-card" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
-      <div class="panel-head"><h2 id="settingsTitle">保存先設定</h2><button id="closeSettings" class="outline" type="button">閉じる</button></div>
-      <fieldset><legend>撮影後の保存先</legend><div class="radio-list"><label><input type="radio" name="destination" value="photos">写真アプリ</label><label><input type="radio" name="destination" value="onedrive">OneDrive</label><label><input type="radio" name="destination" value="both">両方</label></div></fieldset>
-      <p class="muted">写真アプリへの保存は撮影後の共有画面で「画像を保存」を選んでください。</p>
-      <div class="panel-section">
-        <h3>OneDrive 接続</h3>
-        <p class="muted">Microsoft Entra のアプリ登録が必要です。設定方法は同梱の「導入手順.md」を参照してください。</p>
-        <label for="clientIdInput" class="field-label">アプリケーション（クライアント）ID</label>
-        <input id="clientIdInput" class="name-input" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
-        <div class="muted">登録するリダイレクトURI：</div><div id="redirectUri" class="redirect"></div>
-        <div class="button-pair"><button id="connectButton" class="solid" type="button">Microsoftに接続</button><button id="disconnectButton" class="outline" type="button">接続を解除</button></div>
-        <p id="accountLabel" class="muted">未接続</p>
-        <div class="button-pair"><button id="chooseFolderButton" class="outline" type="button">保存フォルダを選ぶ</button></div>
-        <p id="folderLabel" class="muted">フォルダ未設定</p>
-      </div>
-    </div>
-  </div>
-
-  <div id="folderPanel" class="panel" hidden>
-    <div class="panel-card" role="dialog" aria-modal="true" aria-labelledby="folderTitle">
-      <div class="panel-head"><h2 id="folderTitle">OneDrive フォルダ</h2><button id="closeFolder" class="outline" type="button">閉じる</button></div>
-      <p id="folderPath" class="folder-path">読み込み中…</p>
-      <div class="button-pair"><button id="folderBack" class="outline" type="button">上の階層へ</button><button id="selectFolder" class="solid" type="button">このフォルダに保存</button></div>
-      <div id="folderList" class="folder-list"></div>
-      <p id="folderMessage" class="muted"></p>
-    </div>
-  </div>
 
   <script>
     "use strict";
     const $ = id => document.getElementById(id);
-    const SETTINGS_KEY = "stocon-camera-settings-v1";
-    const TOKEN_KEY = "stocon-camera-graph-token-v1";
-    const AUTH_KEY = "stocon-camera-auth-v1";
-    const GRAPH = "https://graph.microsoft.com/v1.0";
-    const AUTHORITY = "https://login.microsoftonline.com/common/oauth2/v2.0";
-    const SCOPES = "Files.ReadWrite User.Read offline_access";
-    const redirectUri = new URL("./", location.href).href;
+    const PREFERENCES_KEY = "stocon-camera-preferences-v2";
 
     function readStore(key, storage) { try { return JSON.parse(storage.getItem(key)); } catch { return null; } }
     function writeStore(key, value, storage) { try { storage.setItem(key, JSON.stringify(value)); } catch { /* Storage can be disabled. */ } }
-    const saved = readStore(SETTINGS_KEY, localStorage) || {};
+    // Keep only the former camera preferences and discard the old, larger settings record.
+    const oldSettings = readStore("stocon-camera-settings-v1", localStorage) || {};
+    const saved = readStore(PREFERENCES_KEY, localStorage) || {
+      orientation: oldSettings.orientation,
+      zoom: oldSettings.zoom,
+      torch: oldSettings.torch
+    };
+    try { localStorage.removeItem("stocon-camera-settings-v1"); } catch { /* Storage can be disabled. */ }
+    try { for (const key of Object.keys(sessionStorage)) if (key.startsWith("stocon-camera-")) sessionStorage.removeItem(key); } catch { /* Ignore. */ }
     const state = {
-      name: typeof saved.name === "string" ? saved.name : "",
       orientation: saved.orientation === "portrait" ? "portrait" : "landscape",
-      destination: ["photos", "onedrive", "both"].includes(saved.destination) ? saved.destination : "photos",
       zoom: [0.5, 1, 2].includes(saved.zoom) ? saved.zoom : 1,
       torch: saved.torch === true,
-      clientId: typeof saved.clientId === "string" ? saved.clientId : "",
-      folder: saved.folder && typeof saved.folder.id === "string" ? saved.folder : null,
       stream: null, track: null, baseId: null, ultraId: null, nativeHalf: false,
-      digitalZoom: 1, nativeZoom: null, cameraBusy: false, torchAvailable: false, shot: null,
-      tokens: readStore(TOKEN_KEY, sessionStorage), account: null, drive: null, folderStack: []
+      digitalZoom: 1, nativeZoom: null, cameraBusy: false, torchAvailable: false, shot: null
     };
 
     function persistSettings() {
-      writeStore(SETTINGS_KEY, {
-        name: state.name, orientation: state.orientation, destination: state.destination,
-        zoom: state.zoom, torch: state.torch, clientId: state.clientId, folder: state.folder
-      }, localStorage);
+      writeStore(PREFERENCES_KEY, { orientation: state.orientation, zoom: state.zoom, torch: state.torch }, localStorage);
     }
     function setStatus(message, error = false) {
       $("status").textContent = message;
       $("status").classList.toggle("error", error);
       $("status").hidden = !message;
-    }
-    function destinationText() { return { photos: "写真アプリ", onedrive: "OneDrive", both: "両方" }[state.destination]; }
-    function updateSettingsUI() {
-      $("destinationLabel").textContent = destinationText();
-      document.querySelector(`input[name="destination"][value="${state.destination}"]`).checked = true;
-      $("folderLabel").textContent = state.folder ? `保存フォルダ：${state.folder.path}` : "フォルダ未設定";
-      $("accountLabel").textContent = state.account ? `接続中：${state.account.displayName || state.account.userPrincipalName || "Microsoft アカウント"}` : "未接続（接続時はMicrosoftの画面に移動します）";
     }
     function updateOrientationUI() {
       const portrait = state.orientation === "portrait";
@@ -323,12 +261,11 @@
     function pad(n) { return String(n).padStart(2, "0"); }
     function timestamp(date) { return `${date.getFullYear()}${pad(date.getMonth()+1)}${pad(date.getDate())}_${pad(date.getHours())}${pad(date.getMinutes())}${pad(date.getSeconds())}`; }
     function fileName(date) {
-      const base = (state.name.trim() || "写真").replace(/[<>:"/\\|?*#%\u0000-\u001f]/g, "_").replace(/[. ]+$/g, "").slice(0, 80) || "写真";
-      return `${base}_${timestamp(date)}.jpg`;
+      return `IMG_${timestamp(date)}.jpg`;
     }
     function positionAtCapture() {
       return new Promise(resolve => {
-        if (!navigator.geolocation) return resolve({ error: "このブラウザでは位置情報を利用できません。" });
+        if (!window.isSecureContext || !navigator.geolocation) return resolve({ error: "位置情報を利用できません。位置情報なしで撮影できます。" });
         navigator.geolocation.getCurrentPosition(
           position => resolve({ position }),
           error => resolve({ error: error.code === 1 ? "位置情報が拒否されました。Safari/ブラウザのサイト設定で位置情報を許可してください。" : error.code === 3 ? "位置情報の取得が時間切れになりました。位置情報なしで保存できます。" : "位置情報を取得できませんでした。位置情報なしで保存できます。" }),
@@ -425,7 +362,6 @@
       $("cameraView").hidden = true; $("reviewView").hidden = false;
       $("saveButton").disabled = true;
       $("backButton").disabled = true;
-      $("reviewSettingsButton").disabled = true;
       $("downloadButton").hidden = true;
       $("gpsInfo").textContent = "位置情報を取得中…";
       $("fileName").textContent = fileName(date);
@@ -440,18 +376,21 @@
           updateReviewImage(blob);
           const { latitude, longitude } = result.position.coords;
           $("gpsInfo").textContent = `位置情報：${latitude.toFixed(6)}, ${longitude.toFixed(6)}（JPEGに記録）`;
-          $("locationState").textContent = "位置情報をJPEGに記録しました";
+          $("locationState").textContent = "最後の撮影：GPSをJPEGに記録しました";
         } else {
           $("gpsInfo").textContent = result.error;
-          $("locationState").textContent = "位置情報なし：権限または受信状況を確認";
+          $("locationState").textContent = "最後の撮影：GPSなし（撮影は保存できます）";
         }
         const name = fileName(date);
-        state.shot = { blob, file: new File([blob], name, { type: "image/jpeg", lastModified: date.getTime() }), uploaded: false, shared: false };
-        reviewMessage(result.position ? "保存するを押してください。" : "位置情報なしで保存できます。", !result.position);
+        state.shot = { blob, file: new File([blob], name, { type: "image/jpeg", lastModified: date.getTime() }), shared: false };
+        const canShare = canShareFile(state.shot.file);
+        $("saveButton").textContent = canShare ? "共有して保存" : "JPEGをダウンロード";
+        $("downloadButton").hidden = !canShare;
+        reviewMessage(result.position ? "共有して「画像を保存」を選んでください。" : "GPSなしで撮影しました。写真は保存できます。", false);
         $("saveButton").disabled = false;
       } catch (error) {
         reviewMessage(`撮影した画像を準備できませんでした：${error.message}`, true);
-      } finally { $("backButton").disabled = false; $("reviewSettingsButton").disabled = false; }
+      } finally { $("backButton").disabled = false; }
     }
     function returnToCamera() {
       state.shot = null;
@@ -463,192 +402,28 @@
       $("video").play().catch(() => startCamera());
     }
 
-    function saveTokens(data) {
-      state.tokens = {
-        access_token: data.access_token, refresh_token: data.refresh_token || state.tokens?.refresh_token || null,
-        expires_at: Date.now() + (Number(data.expires_in) || 3600) * 1000
-      };
-      writeStore(TOKEN_KEY, state.tokens, sessionStorage);
-    }
-    function clearTokens() {
-      state.tokens = null; state.account = null; state.drive = null;
-      try { sessionStorage.removeItem(TOKEN_KEY); } catch { /* Ignore. */ }
-      updateSettingsUI();
-    }
-    let refreshPromise = null;
-    async function tokenRequest(parameters) {
-      const response = await fetch(`${AUTHORITY}/token`, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: new URLSearchParams(parameters) });
-      const data = await response.json();
-      if (!response.ok || !data.access_token) throw new Error(data.error_description || data.error || "Microsoft認証に失敗しました。");
-      saveTokens(data);
-      return state.tokens.access_token;
-    }
-    async function accessToken() {
-      if (state.tokens?.access_token && state.tokens.expires_at > Date.now() + 60000) return state.tokens.access_token;
-      if (state.tokens?.refresh_token && state.clientId) {
-        if (!refreshPromise) {
-          refreshPromise = tokenRequest({ client_id: state.clientId, grant_type: "refresh_token", refresh_token: state.tokens.refresh_token, scope: SCOPES }).finally(() => { refreshPromise = null; });
-        }
-        try { return await refreshPromise; }
-        catch { clearTokens(); }
-      }
-      throw new Error("OneDriveの接続が必要です。保存先設定からMicrosoftに接続してください。");
-    }
-    function randomUrlSafe(length) {
-      const bytes = crypto.getRandomValues(new Uint8Array(length));
-      return btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
-    }
-    async function connectMicrosoft() {
-      if (state.shot) {
-        $("settingsPanel").hidden = true;
-        $("downloadButton").hidden = false;
-        reviewMessage("Microsoftの接続画面に移動すると今回の写真が消えます。先にJPEGをダウンロードし、カメラに戻ってから接続してください。", true);
-        return;
-      }
-      const clientId = $("clientIdInput").value.trim();
-      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(clientId)) {
-        setStatus("MicrosoftのアプリケーションIDを正しく入力してください。", true); return;
-      }
-      state.clientId = clientId; persistSettings();
-      const verifier = randomUrlSafe(48), authState = randomUrlSafe(16);
-      const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier)));
-      const challenge = btoa(String.fromCharCode(...digest)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
-      writeStore(AUTH_KEY, { verifier, authState, redirectUri }, sessionStorage);
-      const params = new URLSearchParams({ client_id: clientId, response_type: "code", redirect_uri: redirectUri, response_mode: "query", scope: SCOPES, state: authState, code_challenge: challenge, code_challenge_method: "S256" });
-      location.assign(`${AUTHORITY}/authorize?${params}`);
-    }
-    async function finishMicrosoftRedirect() {
-      const params = new URLSearchParams(location.search);
-      if (!params.has("code") && !params.has("error")) return;
-      const pending = readStore(AUTH_KEY, sessionStorage);
-      try { sessionStorage.removeItem(AUTH_KEY); } catch { /* Ignore. */ }
-      history.replaceState(null, "", location.pathname + location.hash);
-      if (params.has("error")) { setStatus(`Microsoft認証：${params.get("error_description") || params.get("error")}`, true); return; }
-      if (!pending || pending.authState !== params.get("state") || !state.clientId) { setStatus("Microsoft認証の確認に失敗しました。接続をやり直してください。", true); return; }
-      try {
-        await tokenRequest({ client_id: state.clientId, grant_type: "authorization_code", code: params.get("code"), redirect_uri: pending.redirectUri, code_verifier: pending.verifier, scope: SCOPES });
-        await loadAccountAndDrive();
-        setStatus("OneDriveに接続しました。保存フォルダを選んでください。");
-        $("settingsPanel").hidden = false;
-      } catch (error) { setStatus(`OneDrive接続に失敗しました：${error.message}`, true); }
-    }
-    async function graphRequest(path, options = {}) {
-      const url = path.startsWith("https://") ? path : GRAPH + path;
-      if (!url.startsWith(GRAPH + "/")) throw new Error("OneDriveの応答URLを確認できません。");
-      const token = await accessToken();
-      const response = await fetch(url, { ...options, headers: { Authorization: `Bearer ${token}`, ...(options.headers || {}) } });
-      if (!response.ok) {
-        let message = `Microsoft Graph エラー ${response.status}`;
-        try { const data = await response.json(); message = data.error?.message || message; } catch { /* Ignore. */ }
-        throw new Error(message);
-      }
-      return response.json();
-    }
-    async function loadAccountAndDrive() {
-      const [account, drive] = await Promise.all([graphRequest("/me?$select=id,displayName,userPrincipalName"), graphRequest("/me/drive?$select=id,driveType")]);
-      state.account = account; state.drive = drive;
-      if (state.folder && (state.folder.accountId !== account.id || state.folder.driveId !== drive.id)) {
-        state.folder = null; persistSettings();
-        setStatus("接続したアカウントが変わったため、保存フォルダを選び直してください。", true);
-      }
-      updateSettingsUI();
-    }
-    async function ensureDrive() { if (!state.account || !state.drive) await loadAccountAndDrive(); }
-    async function chooseFolder() {
-      $("folderPanel").hidden = false;
-      $("folderMessage").textContent = "読み込み中…";
-      try {
-        await ensureDrive();
-        const root = await graphRequest("/me/drive/root?$select=id,name");
-        state.folderStack = [{ id: root.id, name: "OneDrive" }];
-        await renderFolder();
-      } catch (error) { $("folderMessage").textContent = error.message; }
-    }
-    async function renderFolder() {
-      const current = state.folderStack.at(-1);
-      if (!current) return;
-      $("folderPath").textContent = state.folderStack.map(f => f.name).join(" / ");
-      $("folderBack").disabled = state.folderStack.length <= 1;
-      $("folderList").replaceChildren();
-      $("folderMessage").textContent = "フォルダを読み込み中…";
-      try {
-        let next = `/drives/${encodeURIComponent(state.drive.id)}/items/${encodeURIComponent(current.id)}/children?$select=id,name,folder&$top=200`;
-        const folders = [];
-        while (next) {
-          const page = await graphRequest(next);
-          folders.push(...(page.value || []).filter(item => item.folder));
-          next = page["@odata.nextLink"] || null;
-        }
-        folders.sort((a, b) => a.name.localeCompare(b.name, "ja"));
-        for (const folder of folders) {
-          const button = document.createElement("button");
-          button.type = "button"; button.textContent = `📁 ${folder.name}`;
-          button.addEventListener("click", async () => { state.folderStack.push({ id: folder.id, name: folder.name }); await renderFolder(); });
-          $("folderList").append(button);
-        }
-        $("folderMessage").textContent = folders.length ? "フォルダを開くか、現在のフォルダを選択してください。" : "この階層に子フォルダはありません。";
-      } catch (error) { $("folderMessage").textContent = `フォルダを開けません：${error.message}`; }
-    }
-    function selectFolder() {
-      const current = state.folderStack.at(-1);
-      if (!current || !state.account || !state.drive) return;
-      state.folder = { id: current.id, driveId: state.drive.id, accountId: state.account.id, path: state.folderStack.map(f => f.name).join(" / ") };
-      persistSettings(); updateSettingsUI();
-      $("folderPanel").hidden = true;
-      setStatus(`OneDrive保存先：${state.folder.path}`);
-    }
-    async function uploadShot() {
-      if (state.shot.uploaded) return;
-      if (!state.folder) throw new Error("OneDriveの保存フォルダが未設定です。保存先設定から選んでください。");
-      await ensureDrive();
-      if (state.folder.accountId !== state.account.id || state.folder.driveId !== state.drive.id) throw new Error("保存フォルダのアカウントが違います。フォルダを選び直してください。");
-      if (state.shot.blob.size > 250 * 1024 * 1024) throw new Error("OneDriveの単一ファイル上限を超えています。");
-      const path = `/drives/${encodeURIComponent(state.folder.driveId)}/items/${encodeURIComponent(state.folder.id)}:/${encodeURIComponent(state.shot.file.name)}:/content`;
-      await graphRequest(path, { method: "PUT", headers: { "Content-Type": "image/jpeg" }, body: state.shot.blob });
-      state.shot.uploaded = true;
-    }
     function canShareFile(file) { return !!(navigator.share && navigator.canShare?.({ files: [file] })); }
-    function updateSaveButton() {
-      if (!state.shot) return;
-      const photosDone = state.destination === "onedrive" || state.shot.shared;
-      const driveDone = state.destination === "photos" || state.shot.uploaded;
-      $("saveButton").disabled = photosDone && driveDone;
-    }
     async function saveShot() {
       const shot = state.shot;
       if (!shot) return;
       $("saveButton").disabled = true;
       $("backButton").disabled = true;
-      $("reviewSettingsButton").disabled = true;
-      const wantPhotos = state.destination !== "onedrive";
-      const wantDrive = state.destination !== "photos";
-      let photoNote = "", driveNote = "", hadError = false;
-      if (wantPhotos && !shot.shared) {
+      try {
         if (canShareFile(shot.file)) {
-          try {
-            // share() must be called directly from this tap. Saving to Photos is chosen in the OS sheet.
-            await navigator.share({ files: [shot.file] });
-            shot.shared = true;
-            photoNote = "共有画面が閉じました。写真アプリに保存したか確認してください。";
-          } catch (error) {
-            hadError = true;
-            photoNote = error.name === "AbortError" ? "共有がキャンセルされました。再度保存を押せます。" : error.name === "NotAllowedError" ? "共有が許可されませんでした。Safariのサイト設定を確認して再試行してください。" : `共有画面を開けませんでした：${error.message}`;
-            $("downloadButton").hidden = false;
-          }
+          // Call share() directly from the user tap; the user chooses Save Image in the system sheet.
+          await navigator.share({ files: [shot.file] });
+          shot.shared = true;
+          reviewMessage("共有画面が閉じました。写真アプリに保存されたことを確認してください。");
+          $("saveButton").textContent = "共有済み";
         } else {
-          hadError = true;
-          photoNote = "このブラウザではJPEG共有を使えません。ダウンロードをご利用ください。";
-          $("downloadButton").hidden = false;
+          downloadShot();
         }
-      }
-      if (wantDrive && !shot.uploaded) {
-        try { reviewMessage(`${photoNote} OneDriveにアップロード中…`); await uploadShot(); driveNote = "OneDriveに保存しました。"; }
-        catch (error) { hadError = true; driveNote = `OneDrive保存失敗：${error.message}`; $("downloadButton").hidden = false; }
-      }
-      reviewMessage([photoNote, driveNote].filter(Boolean).join(" ") || "保存済みです。", hadError);
-      updateSaveButton();
-      $("backButton").disabled = false;
-      $("reviewSettingsButton").disabled = false;
+      } catch (error) {
+        const cancelled = error.name === "AbortError";
+        reviewMessage(cancelled ? "共有をキャンセルしました。もう一度お試しください。" : `共有を開けませんでした：${error.message} JPEGをダウンロードしてください。`, !cancelled);
+        $("downloadButton").hidden = false;
+        $("saveButton").disabled = false;
+      } finally { $("backButton").disabled = false; }
     }
     function downloadShot() {
       if (!state.shot) return;
@@ -660,32 +435,17 @@
       reviewMessage("JPEGをダウンロードしました。iPhoneでは「ファイル」アプリのダウンロード先を確認してください。");
     }
 
-    $("nameInput").value = state.name;
-    $("clientIdInput").value = state.clientId;
-    $("redirectUri").textContent = redirectUri;
-    updateSettingsUI(); updateOrientationUI(); updateZoomUI(); updateTorchUI();
-    $("nameInput").addEventListener("input", event => { state.name = event.target.value; persistSettings(); });
+    updateOrientationUI(); updateZoomUI(); updateTorchUI();
     $("orientationButton").addEventListener("click", () => { state.orientation = state.orientation === "landscape" ? "portrait" : "landscape"; persistSettings(); updateOrientationUI(); });
     for (const button of document.querySelectorAll("[data-zoom]")) button.addEventListener("click", () => applyZoom(Number(button.dataset.zoom)));
     $("torchButton").addEventListener("click", async () => { state.torch = !state.torch; updateTorchUI(); await applyTorch(); persistSettings(); });
     $("shutterButton").addEventListener("click", takePhoto);
     $("retryCamera").addEventListener("click", startCamera);
-    $("settingsButton").addEventListener("click", () => { updateSettingsUI(); $("settingsPanel").hidden = false; });
-    $("reviewSettingsButton").addEventListener("click", () => { updateSettingsUI(); $("settingsPanel").hidden = false; });
-    $("closeSettings").addEventListener("click", () => { $("settingsPanel").hidden = true; });
-    for (const radio of document.querySelectorAll('input[name="destination"]')) radio.addEventListener("change", () => { state.destination = radio.value; persistSettings(); updateSettingsUI(); updateSaveButton(); if (state.destination !== "photos" && !state.folder) setStatus("OneDriveの保存フォルダを設定してください。", true); });
-    $("connectButton").addEventListener("click", connectMicrosoft);
-    $("disconnectButton").addEventListener("click", () => { clearTokens(); setStatus("OneDriveの接続を解除しました。保存フォルダ設定は端末に残ります。"); });
-    $("chooseFolderButton").addEventListener("click", chooseFolder);
-    $("closeFolder").addEventListener("click", () => { $("folderPanel").hidden = true; });
-    $("folderBack").addEventListener("click", async () => { if (state.folderStack.length > 1) { state.folderStack.pop(); await renderFolder(); } });
-    $("selectFolder").addEventListener("click", selectFolder);
     $("saveButton").addEventListener("click", saveShot);
     $("downloadButton").addEventListener("click", downloadShot);
     $("backButton").addEventListener("click", returnToCamera);
     document.addEventListener("visibilitychange", () => { if (!document.hidden && !state.track && !state.shot) startCamera(); });
     startCamera();
-    finishMicrosoftRedirect().then(() => { if (state.tokens && !state.account) loadAccountAndDrive().catch(() => {}); });
   </script>
 </body>
 </html>
